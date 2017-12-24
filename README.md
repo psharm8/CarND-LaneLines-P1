@@ -1,56 +1,77 @@
-# **Finding Lane Lines on the Road** 
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
+[//]: # (Image References)
 
-<img src="examples/laneLines_thirdPass.jpg" width="480" alt="Combined Image" />
+[solidWhiteCurve]: ./test_images_output/solidWhiteCurve.jpg "Solid White Curve"
 
-Overview
+[solidWhiteRight]: ./test_images_output/solidWhiteRight.jpg "Solid White Right"
+
+[solidYellowCurve]: ./test_images_output/solidYellowCurve.jpg "Solid Yellow Curve"
+
+[solidYellowCurve2]: ./test_images_output/solidYellowCurve2.jpg "Solid Yellow Curve - 2"
+
+[solidYellowLeft]: ./test_images_output/solidYellowLeft.jpg "Solid Yellow Left"
+
+[whiteCarLaneSwitch]: ./test_images_output/whiteCarLaneSwitch.jpg "White Car Lane Switch"
+# **Udacity - Self-Driving Car NanoDegree**
+# **P1 - Finding Lane Lines on the Road** 
+![whiteCarLaneSwitch][whiteCarLaneSwitch]
 ---
 
-When we drive, we use our eyes to decide where to go.  The lines on the road that show us where the lanes are act as our constant reference for where to steer the vehicle.  Naturally, one of the first things we would like to do in developing a self-driving car is to automatically detect lane lines using an algorithm.
+The goals / steps of this project are the following:
+* Make a pipeline that finds lane lines on the road
+* Reflect on the work done in this report
 
-In this project you will detect lane lines in images using Python and OpenCV.  OpenCV means "Open-Source Computer Vision", which is a package that has many useful tools for analyzing images.  
-
-To complete the project, two files will be submitted: a file containing project code and a file containing a brief write up explaining your solution. We have included template files to be used both for the [code](https://github.com/udacity/CarND-LaneLines-P1/blob/master/P1.ipynb) and the [writeup](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md).The code file is called P1.ipynb and the writeup template is writeup_template.md 
-
-To meet specifications in the project, take a look at the requirements in the [project rubric](https://review.udacity.com/#!/rubrics/322/view)
-
-
-Creating a Great Writeup
----
-For this project, a great writeup should provide a detailed response to the "Reflection" section of the [project rubric](https://review.udacity.com/#!/rubrics/322/view). There are three parts to the reflection:
-
-1. Describe the pipeline
-
-2. Identify any shortcomings
-
-3. Suggest possible improvements
-
-We encourage using images in your writeup to demonstrate how your pipeline works.  
-
-All that said, please be concise!  We're not looking for you to write a book here: just a brief description.
-
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup. Here is a link to a [writeup template file](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md). 
-
-
-The Project
 ---
 
-## If you have already installed the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) you should be good to go!   If not, you should install the starter kit to get started on this project. ##
+### Reflection
 
-**Step 1:** Set up the [CarND Term1 Starter Kit](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/83ec35ee-1e02-48a5-bdb7-d244bd47c2dc/lessons/8c82408b-a217-4d09-b81d-1bda4c6380ef/concepts/4f1870e0-3849-43e4-b670-12e6f2d4b7a7) if you haven't already.
+### 1. Pipeline description.
 
-**Step 2:** Open the code in a Jupyter Notebook
+#### The pipeline consists of 5 steps:
+1. Converted the input image to grayscale.
+2. Found Canny edges on a blurred version of grayscale image from step - 1.
+3. Masked out the regions that would not contain the lane lines; this is approximately triangle having   
+its base across the image's bottom width and the top of the triangle at around 50% height.
+4. Draw Hough lines within the masked region of the image from step - 3. I had to tweak various parameters    
+of Hough lines function to have it return consistent results for videos, including the challenge.    
+The draw_lines() function also required some work which I will discuss shortly.
+5. The image received from step - 4 consists of left and right lanes drawn on a black background.   
+We use this image as an overlay (using weighted_image() function) on the actual image.   
+This gives us an image annotated with coloured lines dawn over the lanes.
 
-You will complete the project code in a Jupyter notebook.  If you are unfamiliar with Jupyter Notebooks, check out <A HREF="https://www.packtpub.com/books/content/basics-jupyter-notebook-and-python" target="_blank">Cyrille Rossant's Basics of Jupyter Notebook and Python</A> to get started.
+#### The draw_lines() function
+Given a set of point pairs, each representing a line, I classified them as left or right lane   
+by examining their slope. if the angle (arctan of slope) is less than 0 it is a left lane   
+otherwise it is a right lane.   
+This procedure worked well but failed in case of the challenge video. The reason being there were    
+a lot more edges (Hough lines) in the region of interest which were near horizontal slope and were being   
+used as input to line fitting algorithm. This led to the line being unstable as and when there were such   
+in the frame. 
+To reduce this instability, I filtered out all the lines that had an angle of either over 25 degrees or    
+less than 75 degrees. This gave me a list of lines that would mostly resemble the slope of the lanes.   
+i.e. not really close to being horizontal or vertical.   
+Once I had a list of lines classified left and right, I used the fitLine() function to get two lines.
+Using these lines, I calculated the points on the line that would lie at the border of region of interest,      
+drew the lines joining the two extreme points on each line and returned the frame overlaid with the lines to be appended to the video.
 
-Jupyter is an Ipython notebook where you can run blocks of code and see results interactively.  All the code for this project is contained in a Jupyter notebook. To start Jupyter in your browser, use terminal to navigate to your project directory and then run the following command at the terminal prompt (be sure you've activated your Python 3 carnd-term1 environment as described in the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) installation instructions!):
+#### Sample Image Results
+![solidWhiteCurve][solidWhiteCurve]
+![solidWhiteRight][solidWhiteRight]
+![solidYellowCurve][solidYellowCurve]
+![solidYellowCurve2][solidYellowCurve2]
+![solidYellowLeft][solidYellowLeft]
+![whiteCarLaneSwitch][whiteCarLaneSwitch]
 
-`> jupyter notebook`
+### 2. Potential shortcomings with the current pipeline
 
-A browser window will appear showing the contents of the current directory.  Click on the file called "P1.ipynb".  Another browser window will appear displaying the notebook.  Follow the instructions in the notebook to complete the project.  
+1. The region of interest has been hard-coded to cater the provided videos; this is not robust enough to work consistently     
+with many scenarios. e.g. a steep curve would certainly fail to have a reasonable overlap with the region of interest.
+2. The lane lines in the pipeline are drawn from what information is present in the current frame. This makes is unstable     
+and has a jitter. Sensitive to edges in the current frame that are close to the slope of interest.
 
-**Step 3:** Complete the project and submit both the Ipython notebook and the project writeup
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+### 3. Possible improvements to the pipeline
 
+1. Historical data would probably help to a degree in cases of steep changes to the current frame information.     
+e.g. In case of a steep curve, the lanes from the previous frame would already have started to lean towards the curve,    
+this information can be used to adjust the region of interest.
+2. Again, historical information would help average out the sudden changes brought in by stray edges. Smoothing out the changes to lane equation would help in making the lanes steady.
